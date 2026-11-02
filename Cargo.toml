@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["crates/desktop-gui-utils"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+authors = ["naranyala"]
+license = "MIT"
+repository = "https://github.com/naranyala/desktop-gui-utility"

@@ -1,0 +1,25 @@
+[package]
+name = "desktop-gui-utils"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Cross-platform desktop utility library without a GUI framework"
+readme = "../../README.md"
+
+[features]
+default = ["file-dialog", "notification", "tray", "clipboard", "open-url"]
+file-dialog = ["dep:rfd"]
+notification = ["dep:notify-rust"]
+tray = []
+clipboard = ["dep:arboard"]
+open-url = ["dep:open"]
+
+[dependencies]
+rfd = { version = "0.15", optional = true }
+notify-rust = { version = "4", optional = true }
+arboard = { version = "3.4", optional = true }
+open = { version = "5", optional = true }
+
+[dev-dependencies]
