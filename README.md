@@ -1,58 +1,127 @@
-# desktop-gui-utility
+# Desktop GUI utilities, without a GUI framework
 
-A cross-platform desktop utility crate collection for Rust without requiring a GUI framework.
+`desktop-gui-utils` is a Rust workspace that gives desktop applications native
+OS capabilities through one small, framework-neutral API:
 
-This workspace provides a stable API for desktop capabilities such as:
-
-- file and folder picking
+- file and directory picking, save dialogs
 - system notifications
-- system tray support
 - clipboard access
-- opening URLs and local files
-- platform detection and integration helpers
+- opening URLs and local files with the platform handler
+- platform detection helpers
 
-The design intentionally avoids UI frameworks like `gtk`, `qt`, `slint`, `egui`, `iced`, or `tauri`.
-Instead, it uses native platform integrations through focused crates and keeps a single, framework-neutral public API.
+It deliberately avoids pulling in a UI toolkit — no `gtk`, `qt`, `slint`,
+`egui`, `iced`, or `tauri`. Each capability delegates to a focused native
+backend crate, so your binary only pays for the features it enables.
 
-## Workspace structure
+## Status
 
-- `crates/desktop-gui-utils` — primary crate exposing the public API
+Version `0.1.0`, in active development. File dialogs, notifications,
+clipboard, and URL/path opening are working. The system-tray capability is
+currently a documented stub — see the [tray design](docs/TRAY-DESIGN.md) and
+the [roadmap](TODOS.md).
 
-## Features
+## Quick start
 
-Enabled by default:
-
-- `file-dialog`
-- `notification`
-- `tray`
-- `clipboard`
-- `open-url`
-
-## Example
+```toml
+# While the crate is in development, install from git:
+[dependencies]
+desktop-gui-utils = { git = "https://github.com/naranyala/desktop-gui-utils" }
+```
 
 ```rust
 use desktop_gui_utils::{
-    dialog::{pick_file, pick_directory, FileDialogOptions},
+    dialog::{pick_file, FileDialogOptions},
     notification::notify,
+    open::open_url,
 };
 
 fn main() {
-    if let Some(path) = pick_file(FileDialogOptions::default()) {
-        println!("Picked file: {}", path.display());
+    // Native file picker. `None` simply means the user cancelled — this is
+    // not an error, which is why dialogs return Options.
+    if let Some(path) = pick_file(FileDialogOptions {
+        title: Some("Open a report".to_string()),
+        initial_directory: None,
+        filters: vec![("Markdown", vec!["md", "markdown"])],
+        multiple: false,
+        file_name: None,
+    }) {
+        println!("Picked: {}", path.display());
     }
 
-    if let Some(dir) = pick_directory(FileDialogOptions::default()) {
-        println!("Picked directory: {}", dir.display());
+    // Notifications instead return a Result.
+    if let Err(err) = notify("My app", "Everything is ready.") {
+        eprintln!("notification failed: {err}");
     }
 
-    let _ = notify("Application started", "The desktop utility is ready.");
+    open_url("https://example.com").expect("browser should open");
 }
 ```
 
-## Intended usage
+More runnable snippets live in [`crates/desktop-gui-utils/examples/`](crates/desktop-gui-utils/examples)
+and are compile-checked by `cargo test`.
 
-Use this crate as a shared library in desktop applications, tray-based tools, or utility apps that need native OS behaviors without tying themselves to a specific GUI toolkit.
+## Capabilities
+
+| Capability | Feature flag (default on) | Backend crate | Notes |
+| --- | --- | --- | --- |
+| File / directory pick, save-as | `file-dialog` | [`rfd`](https://crates.io/crates/rfd) 0.15 | `pick_file`, `pick_files`, `pick_directory`, `save_file` |
+| System notifications | `notification` | [`notify-rust`](https://crates.io/crates/notify-rust) 4 | `notify`, `notify_with` for app name, icon and timeout |
+| System tray | `tray` | planned: `ksni` / `tray-icon` | stub today — see design doc |
+| Clipboard text | `clipboard` | [`arboard`](https://crates.io/crates/arboard) | `copy_text`, `paste_text` |
+| Open URL / path | `open-url` | [`open`](https://crates.io/crates/open) | `open_url`, `open_path`, `open_file` |
+| Platform detection | always | std | `platform()`, `Platform` enum |
+
+Disable what you don't need:
+
+```toml
+desktop-gui-utils = { git = "...", default-features = false, features = ["clipboard"] }
+```
+
+## Error model
+
+Two clear failure shapes instead of strings:
+
+- **Dialogs return `Option`** — the user cancelling is not an error.
+- **Everything else returns `Result<T, GuiUtilsError>`** with
+  - `GuiUtilsError::Unsupported` — the feature can't work in this environment
+    (headless session, no notification daemon), and
+  - `GuiUtilsError::Backend` — the native backend reported an operational
+    failure.
+
+`is_unsupported()` / `is_backend()` let you branch on that distinction; type
+`GuiUtilsError` implements `Display` and `std::error::Error`, so it plays well
+with `anyhow`/`eyre` applications.
+
+## Testing and quality
+
+```sh
+cargo test                      # headless-safe suite (unit + public-API smoke)
+cargo test -- --ignored         # interactive tests: native dialogs, real
+                                # notifications, browser/file-manager launches
+cargo clippy --workspace --all-targets
+```
+
+The whole suite is designed to pass in headless CI environments — anything
+that pops desktop UI is gated behind `#[ignore = "..."]` with instructions.
+Details and platform caveats: [docs/TESTING.md](docs/TESTING.md).
+
+## Documentation
+
+| Doc | Contents |
+| --- | --- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | workspace layout, module design, dependency map |
+| [`docs/TESTING.md`](docs/TESTING.md) | test strategy, how to run, clipboard/platform caveats |
+| [`docs/PLATFORMS.md`](docs/PLATFORMS.md) | per-platform support matrix and Linux specifics |
+| [`docs/TRAY-DESIGN.md`](docs/TRAY-DESIGN.md) | design sketch for the upcoming tray implementation |
+| [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) | dev workflow, commit conventions, checklist |
+| [`TODOS.md`](TODOS.md) | development plan and status tracker |
+
+## Contributing
+
+PRs welcome! Read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) first; keep the
+"no GUI framework" rule in mind — capabilities should ride on small native
+backends, not embed a toolkit.
 
 ## License
 
-MIT
+MIT — see [`LICENSE`](LICENSE).

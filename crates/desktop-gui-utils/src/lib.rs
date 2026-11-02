@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+pub mod error;
+pub mod platform;
+
 #[cfg(feature = "file-dialog")]
 pub mod dialog;
 #[cfg(feature = "notification")]
@@ -11,17 +14,16 @@ pub mod clipboard;
 #[cfg(feature = "open-url")]
 pub mod open;
 
-pub mod platform;
-
-pub use platform::{Platform, platform};
+pub use error::{GuiUtilsError, Result};
+pub use platform::{platform, Platform};
 
 #[cfg(feature = "file-dialog")]
 pub use dialog::{
-    pick_directory, pick_file, save_file, FileDialogOptions, FileDialogResult,
+    pick_directory, pick_file, pick_files, save_file, FileDialogOptions, FileDialogResult,
 };
 
 #[cfg(feature = "notification")]
-pub use notification::{notify, NotificationOptions};
+pub use notification::{notify, notify_with, NotificationOptions};
 
 #[cfg(feature = "tray")]
 pub use tray::{Tray, TrayBuilder};

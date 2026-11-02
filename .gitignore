@@ -1,15 +1,2 @@
-use desktop_gui_utils::platform::{platform, Platform};
-
-#[test]
-fn platform_has_known_variant() {
-    let p = platform();
-    assert!(
-        matches!(p, Platform::Windows | Platform::Linux | Platform::MacOs | Platform::Other)
-    );
-}
-
-#[test]
-fn core_api_is_accessible() {
-    let _ = platform();
-}
-
+# Rust build artifacts
+/target/
