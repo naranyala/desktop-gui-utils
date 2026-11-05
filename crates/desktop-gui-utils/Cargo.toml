@@ -7,6 +7,8 @@ license.workspace = true
 repository.workspace = true
 description = "Cross-platform desktop utility library without a GUI framework"
 readme = "../../README.md"
+keywords = ["desktop", "gui", "utility", "cross-platform", "native"]
+categories = ["gui", "os"]
 
 [features]
 default = ["file-dialog", "notification", "tray", "clipboard", "open-url"]
@@ -23,3 +25,6 @@ arboard = { version = "3.4", optional = true }
 open = { version = "5", optional = true }
 
 [dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
